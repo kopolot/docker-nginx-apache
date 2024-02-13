@@ -1,0 +1,67 @@
+#!/bin/bash
+
+clear
+while [ -z "$NAME" ];do
+    echo "Podaj nazwe konteneru:"
+    read NAME
+    if docker ps -a --format '{{.Names}}' | grep -q "^$NAME-httpd";then
+        clear
+        echo "Kontener o takiej nazwie juz istnieje"
+        NAME=""
+    fi
+done
+while [ -z "$PHP_VERSION" ];do
+    clear
+    echo "Podaj wersję php:"
+    read PHP_VERSION
+    docker image pull "php:${PHP_VERSION}-fpm-alpine" &>> /dev/null
+    if [ 0 -ne "$?" ];then
+        PHP_VERSION=''
+    fi
+done
+clear
+echo "Podaj nazwę bazy danych:"
+read DB_NAME
+echo "Podaj nazwę użytkownika:"
+read DB_USER
+echo "Podaj hasło"
+read DB_PASSWORD
+clear
+docker network create $NAME-localhost
+docker build --pull -t "$NAME-php-$PHP_VERSION-fpm" - <<EOF
+FROM php:$PHP_VERSION-fpm-alpine
+RUN adduser --disabled-password container
+EOF
+docker run -d \
+    --name "$NAME-php-$PHP_VERSION-fpm" \
+    -v "$NAME-appdata:/var/www/html/" \
+    --network "$NAME-localhost" \
+    --hostname php-fpm \
+    "php:$PHP_VERSION-fpm-alpine"
+APACHE_DIR="$(dirname $0)"
+docker build --pull -t "$NAME-httpd" - <<EOF
+FROM httpd:2.4.58-alpine
+RUN rm /usr/local/apache2/conf/httpd.conf
+RUN mkdir /var/log/apache2
+RUN adduser --disabled-password container
+COPY $APACHE_DIR/apache/sites/* /usr/local/apache2/conf/httpd.conf
+COPY $APACHE_DIR/apache/configs/httpd.conf /usr/local/apache2/conf/httpd.conf
+EOF
+docker run -d \
+    --name "$NAME-httpd" \
+    -v "$NAME-appdata:/var/www/html/" \
+    --network "$NAME-localhost" \
+    --network nginx-reverse-proxy_localhost \
+    --hostname "$HOSTNAME" \
+    httpd:2.4.58-alpine
+docker run -d \
+    --name "$NAME-db" \
+    --hostname mariadb \
+    -v "$NAME-bd:/var/lib/mysql/" \
+    -env "MARIADB_DATABASE=$DB_NAME" \
+    --env "MARIADB_USER=$DB_USER" \
+    --env "MARIADB_PASSWORD=$DB_PASSWORD" \
+    --network "$NAME-localhost" \
+    mariadb:11.2.2
+
+    

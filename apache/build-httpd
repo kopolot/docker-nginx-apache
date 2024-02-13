@@ -1,0 +1,5 @@
+FROM httpd:2.4.58-alpine
+
+RUN rm /usr/local/apache2/conf/httpd.conf
+RUN mkdir /var/log/apache2
+RUN adduser --disabled-password container

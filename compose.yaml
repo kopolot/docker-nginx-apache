@@ -1,0 +1,17 @@
+services:
+  nginx:
+    image: nginx:1.25.3-alpine
+    networks:
+      - localhost
+    ports:
+      - 80:80
+      - 443:443
+    hostname: localhost
+    restart: always
+    volumes:
+      - ./configs/:/etc/nginx/conf.d/
+      - ./certs/localhost.crt:/etc/nginx/ssl/live/reverse/cert.pem
+      - ./certs/localhost.key:/etc/nginx/ssl/live/reverse/privkey.pem
+
+networks:
+  localhost:

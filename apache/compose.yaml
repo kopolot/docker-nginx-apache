@@ -1,0 +1,35 @@
+services:
+  http:
+    image: httpd:2.4.58-alpine
+    volumes:
+      - ./src/:/var/www/html/
+      - ./sites/:/usr/local/apache2/sites/
+      - ./configs/httpd.conf:/usr/local/apache2/conf/httpd.conf
+    hostname: apache2.local
+    networks:
+      - nginx-reverse-proxy_localhost
+      - localhost
+    build: 
+      dockerfile: build-httpd
+
+  php-fpm:
+    image: php:8.1-fpm-alpine
+    volumes:
+      - ./src/:/var/www/html/
+    hostname: php-fpm
+    networks:
+      - localhost
+    build: 
+      dockerfile: build-php
+
+  # db:
+  #   image: mariadb:11.2.2
+  #   environment:
+  #     - 
+  #   hostname: 
+
+networks:
+  nginx-reverse-proxy_localhost:
+    external: true
+  localhost:
+    
