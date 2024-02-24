@@ -1,7 +1,8 @@
 services:
   nginx:
+    container_name: nginx-reverse-proxy
     image: nginx:1.25.3-alpine
-    networks:
+    networks: 
       - localhost
     ports:
       - 80:80
@@ -9,9 +10,10 @@ services:
     hostname: localhost
     restart: always
     volumes:
-      - ./configs/:/etc/nginx/conf.d/
+      - ./sites/:/etc/nginx/conf.d/
       - ./certs/localhost.crt:/etc/nginx/ssl/live/reverse/cert.pem
       - ./certs/localhost.key:/etc/nginx/ssl/live/reverse/privkey.pem
 
 networks:
   localhost:
+    name: nginx-apache-reverse

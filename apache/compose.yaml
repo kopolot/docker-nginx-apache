@@ -15,7 +15,7 @@ services:
   php-fpm:
     image: php:8.1-fpm-alpine
     volumes:
-      - ./src/:/var/www/html/
+      - appdata:/var/www/html/
     hostname: php-fpm
     networks:
       - localhost

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+clear
+echo "Podaj prefix kontenerów"
+read NAME
+for container in $(docker container ls --format {{.Names}} | grep "^${NAME}-*");do 
+    docker container stop $container
+    docker container rm $container
+done
+for volume in $(docker volume ls --format {{.Name}} | grep "^${NAME}-*");do 
+    docker volume rm $volume
+done
+for network in $(docker network ls --format {{.Name}} | grep "^${NAME}-*");do 
+    docker network rm $network
+done
+for image in $(docker image ls --format {{.Repository}} | grep "^${NAME}-*");do 
+    docker image rm $image
+done
+DIR="$(dirname $(readlink -f "$0"))"
+rm -f "$DIR/../sites/$NAME.conf"
+docker container restart nginx-reverse-proxy

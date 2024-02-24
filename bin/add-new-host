@@ -20,6 +20,10 @@ while [ -z "$PHP_VERSION" ];do
     fi
 done
 clear
+echo "Podaj nazwę hosta http:"
+read HOSTNAME
+echo "Podaj hasło do rootów"
+read ROOT_PASSWORD
 echo "Podaj nazwę bazy danych:"
 read DB_NAME
 echo "Podaj nazwę użytkownika:"
@@ -27,41 +31,54 @@ read DB_USER
 echo "Podaj hasło"
 read DB_PASSWORD
 clear
+DIR="$(dirname $(readlink -f "$0"))"
+APACHE_DIR="$DIR/../apache/"
 docker network create $NAME-localhost
-docker build --pull -t "$NAME-php-$PHP_VERSION-fpm" - <<EOF
-FROM php:$PHP_VERSION-fpm-alpine
-RUN adduser --disabled-password container
-EOF
+docker build \
+    --pull \
+    -t "$NAME-php-$PHP_VERSION-fpm" \
+    -f "$APACHE_DIR/build-php" \
+    --build-arg PHP_VERSION=$PHP_VERSION \
+    --build-arg ROOT_PASSWORD=$ROOT_PASSWORD \
+    --no-cache \
+    $APACHE_DIR
 docker run -d \
     --name "$NAME-php-$PHP_VERSION-fpm" \
     -v "$NAME-appdata:/var/www/html/" \
     --network "$NAME-localhost" \
     --hostname php-fpm \
-    "php:$PHP_VERSION-fpm-alpine"
-APACHE_DIR="$(dirname $0)"
-docker build --pull -t "$NAME-httpd" - <<EOF
-FROM httpd:2.4.58-alpine
-RUN rm /usr/local/apache2/conf/httpd.conf
-RUN mkdir /var/log/apache2
-RUN adduser --disabled-password container
-COPY $APACHE_DIR/apache/sites/* /usr/local/apache2/conf/httpd.conf
-COPY $APACHE_DIR/apache/configs/httpd.conf /usr/local/apache2/conf/httpd.conf
-EOF
+    --user container \
+    --restart always \
+    "$NAME-php-$PHP_VERSION-fpm"
+docker build \
+    --pull \
+    -t "$NAME-httpd" \
+    -f "$APACHE_DIR/build-httpd" \
+    --no-cache \
+    $APACHE_DIR
 docker run -d \
     --name "$NAME-httpd" \
     -v "$NAME-appdata:/var/www/html/" \
     --network "$NAME-localhost" \
-    --network nginx-reverse-proxy_localhost \
+    --network "nginx-apache-reverse" \
     --hostname "$HOSTNAME" \
-    httpd:2.4.58-alpine
+    "$NAME-httpd"
 docker run -d \
     --name "$NAME-db" \
     --hostname mariadb \
-    -v "$NAME-bd:/var/lib/mysql/" \
-    -env "MARIADB_DATABASE=$DB_NAME" \
+    -v "$NAME-db:/var/lib/mysql/" \
+    --env "MARIADB_DATABASE=$DB_NAME" \
     --env "MARIADB_USER=$DB_USER" \
     --env "MARIADB_PASSWORD=$DB_PASSWORD" \
+    --env MARIADB_ROOT_PASSWORD=$ROOT_PASSWORD \
     --network "$NAME-localhost" \
+    --restart always \
     mariadb:11.2.2
-
-    
+cp "$DIR/../configs/reverse.conf" "$DIR/../sites/$NAME.conf"
+declare -A PARAMS=(
+    ["HOSTNAME"]="$HOSTNAME"
+)
+for key in "${!PARAMS[@]}";do
+    sed -i "s/\${$key}/${PARAMS[$key]}/g" "$DIR/../sites/$NAME.conf"
+done
+docker container restart nginx-reverse-proxy
