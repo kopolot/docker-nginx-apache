@@ -10,4 +10,6 @@ RUN echo -e "Defaults rootpw\nALL ALL=(ALL:ALL) PASSWD: ALL" | tee -a /etc/sudoe
 RUN chown root:root /bin/su && chmod 4755 /bin/su
 RUN echo "root:${ROOT_PASSWORD}" | chpasswd
 RUN sudo -u container echo "source /etc/profile.d/bash_completion.sh" >> /home/container/.bashrc
+RUN mkdir /var/lib/php /var/lib/php/session
+RUN chown container:container /var/lib/php/session; chmod 1733 /var/lib/php/session
 ENV SHELL=/bin/bash

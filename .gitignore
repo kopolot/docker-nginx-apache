@@ -1,3 +1,5 @@
 /dump/*
-/sites_configs/*/*
-/sites/*
+sites_configs/php/*
+sites_configs/nginx/*
+sites_configs/apache/*
+sites/*
