@@ -10,7 +10,7 @@ services:
     hostname: localhost
     restart: always
     volumes:
-      - ./sites/:/etc/nginx/conf.d/
+      - ./sites_configs/nginx/:/etc/nginx/conf.d/
       - ./certs/localhost.crt:/etc/nginx/ssl/live/reverse/cert.pem
       - ./certs/localhost.key:/etc/nginx/ssl/live/reverse/privkey.pem
 

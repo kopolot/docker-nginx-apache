@@ -1,5 +1,4 @@
 #!/bin/bash
-
 clear
 echo "Podaj prefix kontenerów"
 read NAME
@@ -17,5 +16,5 @@ for image in $(docker image ls --format {{.Repository}} | grep "^${NAME}-*");do
     docker image rm $image
 done
 DIR="$(dirname $(readlink -f "$0"))"
-rm -f "$DIR/../sites/$NAME.conf"
+rm -fr "$DIR/../sites_configs/nginx/$NAME.conf" "$DIR/../sites_configs/apache/$NAME.conf" "$DIR/../sites_configs/php/$NAME.conf" "$DIR/../sites_configs/php/$NAME.ini"
 docker container restart nginx-reverse-proxy

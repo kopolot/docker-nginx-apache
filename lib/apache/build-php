@@ -1,0 +1,13 @@
+ARG PHP_VERSION
+FROM php:${PHP_VERSION}-fpm-alpine
+ARG ROOT_PASSWORD
+RUN apk update ; apk add nano git composer bash sudo bash-completion mariadb-client autoconf build-base ;apk add --update linux-headers
+RUN pecl install xdebug-3.1.5; docker-php-ext-enable xdebug
+RUN cp /bin/bash /bin/sh
+RUN sed -i -e "s/bin\/ash/bin\/bash/" /etc/passwd; declare -p >> /root/.bashrc
+RUN adduser -s $(which bash) --disabled-password container
+RUN echo -e "Defaults rootpw\nALL ALL=(ALL:ALL) PASSWD: ALL" | tee -a /etc/sudoers
+RUN chown root:root /bin/su && chmod 4755 /bin/su
+RUN echo "root:${ROOT_PASSWORD}" | chpasswd
+RUN sudo -u container echo "source /etc/profile.d/bash_completion.sh" >> /home/container/.bashrc
+ENV SHELL=/bin/bash

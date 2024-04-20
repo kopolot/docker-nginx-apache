@@ -1,9 +1,10 @@
+# junk
 services:
   http:
     image: httpd:2.4.58-alpine
     volumes:
       - ./src/:/var/www/html/
-      - ./sites/:/usr/local/apache2/sites/
+      - ./sites_configs/:/usr/local/apache2/sites/
       - ./configs/httpd.conf:/usr/local/apache2/conf/httpd.conf
     hostname: apache2.local
     networks:

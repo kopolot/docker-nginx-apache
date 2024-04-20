@@ -32,7 +32,7 @@ echo "Podaj hasło"
 read DB_PASSWORD
 clear
 DIR="$(dirname $(readlink -f "$0"))"
-APACHE_DIR="$DIR/../apache/"
+APACHE_DIR="$DIR/../lib/apache/"
 docker network create $NAME-localhost
 docker build \
     --pull \
@@ -42,9 +42,16 @@ docker build \
     --build-arg ROOT_PASSWORD=$ROOT_PASSWORD \
     --no-cache \
     $APACHE_DIR
+mkdir ./sites/$NAME
+cp "$APACHE_DIR/configs/www.conf" "./sites_configs/php/$NAME.conf"
+cp "$APACHE_DIR/configs/php.ini" "./sites_configs/php/$NAME.ini"
 docker run -d \
     --name "$NAME-php-$PHP_VERSION-fpm" \
-    -v "$NAME-appdata:/var/www/html/" \
+    -v "./sites/$NAME:/var/www/html/" \
+    -v "./sites_configs/php/$NAME.conf:/usr/local/etc/php-fpm.d/docker.conf" \
+    -v "./sites_configs/php/$NAME.ini:/usr/local/etc/php/php.ini" \
+    -v "$NAME-sessions:/var/lib/php/session/" \
+    --env "PHP_INI_DIR=/usr/local/etc/php" \
     --network "$NAME-localhost" \
     --hostname php-fpm \
     --user container \
@@ -56,9 +63,12 @@ docker build \
     -f "$APACHE_DIR/build-httpd" \
     --no-cache \
     $APACHE_DIR
+cp "$APACHE_DIR/sites/default.conf" "./sites_configs/apache/$NAME.conf"
 docker run -d \
     --name "$NAME-httpd" \
-    -v "$NAME-appdata:/var/www/html/" \
+    -v "./sites/$NAME:/var/www/html/" \
+    -v "./sites_configs/apache/$NAME.conf:/usr/local/apache2/sites/default.conf" \
+    -v "$NAME-sessions:/var/lib/php/session/" \
     --network "$NAME-localhost" \
     --network "nginx-apache-reverse" \
     --hostname "$HOSTNAME" \
@@ -74,11 +84,11 @@ docker run -d \
     --network "$NAME-localhost" \
     --restart always \
     mariadb:11.2.2
-cp "$DIR/../configs/reverse.conf" "$DIR/../sites/$NAME.conf"
+cp "$DIR/../lib/configs/reverse.conf" "$DIR/../sites_configs/nginx/$NAME.conf"
 declare -A PARAMS=(
     ["HOSTNAME"]="$HOSTNAME"
 )
 for key in "${!PARAMS[@]}";do
-    sed -i "s/\${$key}/${PARAMS[$key]}/g" "$DIR/../sites/$NAME.conf"
+    sed -i "s/\${$key}/${PARAMS[$key]}/g" "$DIR/../sites_configs/nginx/$NAME.conf"
 done
 docker container restart nginx-reverse-proxy
