@@ -1,5 +1,4 @@
 #!/bin/bash
-
 clear
 while [ -z "$NAME" ];do
     echo "Podaj nazwe konteneru:"
@@ -72,6 +71,7 @@ docker run -d \
     --network "$NAME-localhost" \
     --network "nginx-apache-reverse" \
     --hostname "$HOSTNAME" \
+    --restart always \
     "$NAME-httpd"
 docker run -d \
     --name "$NAME-db" \
@@ -87,6 +87,7 @@ docker run -d \
 cp "$DIR/../lib/configs/reverse.conf" "$DIR/../sites_configs/nginx/$NAME.conf"
 declare -A PARAMS=(
     ["HOSTNAME"]="$HOSTNAME"
+    ["NAME"]="$NAME"
 )
 for key in "${!PARAMS[@]}";do
     sed -i "s/\${$key}/${PARAMS[$key]}/g" "$DIR/../sites_configs/nginx/$NAME.conf"
