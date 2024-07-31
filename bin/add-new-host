@@ -1,35 +1,49 @@
 #!/bin/bash
-clear
-while [ -z "$NAME" ];do
-    echo "Podaj nazwe konteneru:"
-    read NAME
-    if docker ps -a --format '{{.Names}}' | grep -q "^$NAME-httpd";then
-        clear
-        echo "Kontener o takiej nazwie juz istnieje"
-        NAME=""
-    fi
-done
-while [ -z "$PHP_VERSION" ];do
+# tu trzeba chyab dorobic argumenty inline
+if [ -n "$TEST" ]; then
     clear
-    echo "Podaj wersję php:"
-    read PHP_VERSION
-    docker image pull "php:${PHP_VERSION}-fpm-alpine" &>> /dev/null
-    if [ 0 -ne "$?" ];then
-        PHP_VERSION=''
-    fi
-done
-clear
-echo "Podaj nazwę hosta http:"
-read HOSTNAME
-echo "Podaj hasło do rootów"
-read ROOT_PASSWORD
-echo "Podaj nazwę bazy danych:"
-read DB_NAME
-echo "Podaj nazwę użytkownika:"
-read DB_USER
-echo "Podaj hasło"
-read DB_PASSWORD
-clear
+    while [ -z "$NAME" ];do
+        echo "Podaj nazwe konteneru:"
+        read NAME
+        if docker ps -a --format '{{.Names}}' | grep -q "^$NAME-httpd";then
+            clear
+            echo "Kontener o takiej nazwie juz istnieje"
+            NAME=""
+        fi
+    done
+    while [ -z "$PHP_VERSION" ];do
+        clear
+        echo "Podaj wersję php:"
+        read PHP_VERSION
+        docker image pull "php:${PHP_VERSION}-fpm-alpine" &>> /dev/null
+        if [ 0 -ne "$?" ];then
+            PHP_VERSION=''
+        fi
+    done
+    clear
+    echo "Podaj nazwę hosta http:"
+    read HOSTNAME
+    echo "Podaj hasło do rootów"
+    read ROOT_PASSWORD
+    echo "Podaj nazwę bazy danych:"
+    read DB_NAME
+    echo "Podaj nazwę użytkownika:"
+    read DB_USER
+    echo "Podaj hasło"
+    read DB_PASSWORD
+    clear
+else
+    NAME="test"
+    PHP_VERSION="$1"
+    HOSTNAME=local.test.com
+    ROOT_PASSWORD=DB_NAME=DB_USER=DB_PASSWORD="test"
+fi
+# tu mozna docelowo dac switcha czy cos
+if (( $( echo "$PHP_VERSION >= 8.1" | bc ) )); then
+    XDEBUG_VERSION="3.3.2"
+else
+    XDEBUG_VERSION="3.1.5"
+fi
 DIR="$(dirname $(readlink -f "$0"))"
 APACHE_DIR="$DIR/../lib/apache/"
 docker network create $NAME-localhost
@@ -39,6 +53,7 @@ docker build \
     -f "$APACHE_DIR/build-php" \
     --build-arg PHP_VERSION=$PHP_VERSION \
     --build-arg ROOT_PASSWORD=$ROOT_PASSWORD \
+    --build-arg XDEBUG_VERSION=$XDEBUG_VERSION \
     --no-cache \
     $APACHE_DIR
 mkdir ./sites/$NAME
@@ -49,13 +64,16 @@ docker run -d \
     -v "./sites/$NAME:/var/www/html/" \
     -v "./sites_configs/php/$NAME.conf:/usr/local/etc/php-fpm.d/docker.conf" \
     -v "./sites_configs/php/$NAME.ini:/usr/local/etc/php/php.ini" \
-    -v "$NAME-sessions:/var/lib/php/session/" \
+    -v "$NAME-data:/var/lib/php/volume/" \
     --env "PHP_INI_DIR=/usr/local/etc/php" \
     --network "$NAME-localhost" \
     --hostname php-fpm \
     --user container \
     --restart always \
     "$NAME-php-$PHP_VERSION-fpm"
+docker exec -itu root "$NAME-php-$PHP_VERSION-fpm" mkdir /var/lib/php/volume/session /var/lib/php/volume/tmp_dir
+docker exec -itu root "$NAME-php-$PHP_VERSION-fpm" chown -R container /var/lib/php/volume/*
+docker exec -itu root "$NAME-php-$PHP_VERSION-fpm"  chmod -R 1733 /var/lib/php/volume
 docker build \
     --pull \
     -t "$NAME-httpd" \
@@ -67,7 +85,7 @@ docker run -d \
     --name "$NAME-httpd" \
     -v "./sites/$NAME:/var/www/html/" \
     -v "./sites_configs/apache/$NAME.conf:/usr/local/apache2/sites/default.conf" \
-    -v "$NAME-sessions:/var/lib/php/session/" \
+    -v "$NAME-data:/var/lib/php/volume/" \
     --network "$NAME-localhost" \
     --network "nginx-apache-reverse" \
     --hostname "$HOSTNAME" \

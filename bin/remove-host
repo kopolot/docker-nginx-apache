@@ -1,4 +1,5 @@
 #!/bin/bash
+# drobic inline
 clear
 echo "Podaj prefix kontenerów"
 read NAME
@@ -15,6 +16,10 @@ done
 for image in $(docker image ls --format {{.Repository}} | grep "^${NAME}-*");do 
     docker image rm $image
 done
-DIR="$(dirname $(readlink -f "$0"))"
-rm -fr "$DIR/../sites_configs/nginx/$NAME.conf" "$DIR/../sites_configs/apache/$NAME.conf" "$DIR/../sites_configs/php/$NAME.conf" "$DIR/../sites_configs/php/$NAME.ini"
+echo "Usunąć pliki? [Y/n]"
+read A
+if [ $A = "Y" ];then 
+    DIR="$(dirname $(readlink -f "$0"))"
+    rm -fr "$DIR/../sites_configs/nginx/$NAME.conf" "$DIR/../sites_configs/apache/$NAME.conf" "$DIR/../sites_configs/php/$NAME.conf" "$DIR/../sites_configs/php/$NAME.ini"
+fi
 docker container restart nginx-reverse-proxy

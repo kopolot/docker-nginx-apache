@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ -z "$1" ] ;then
+    echo "Podaj wersje php";
+    exit 1
+fi
+TEST=1
+echo $
+bin/add-new-host $1
