@@ -1,6 +1,6 @@
 #!/bin/bash
 # tu trzeba chyab dorobic argumenty inline
-if [ -n "$TEST" ]; then
+if [ ! -n "$TEST" ]; then
     clear
     while [ -z "$NAME" ];do
         echo "Podaj nazwe konteneru:"

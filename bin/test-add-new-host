@@ -3,6 +3,5 @@ if [ -z "$1" ] ;then
     echo "Podaj wersje php";
     exit 1
 fi
-TEST=1
-echo $
+export TEST=1
 bin/add-new-host $1
