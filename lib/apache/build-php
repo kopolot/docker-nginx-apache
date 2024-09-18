@@ -7,6 +7,8 @@ ARG ROOT_PASSWORD
 RUN apk update
 RUN apk add nano git bash sudo bash-completion mariadb-client autoconf build-base ;apk add --update linux-headers
 RUN pecl install "xdebug-${XDEBUG_VERSION}"; docker-php-ext-enable xdebug
+RUN pecl install apcu; docker-php-ext-enable apcu
+RUN docker-php-ext install opcache; docker-php-ext-enable opcache
 RUN cp /bin/bash /bin/sh
 RUN sed -i -e "s/bin\/ash/bin\/bash/" /etc/passwd; declare -p >> /root/.bashrc
 RUN adduser -s $(which bash) --disabled-password container
