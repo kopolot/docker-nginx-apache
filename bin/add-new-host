@@ -54,6 +54,7 @@ docker build \
     --build-arg PHP_VERSION=$PHP_VERSION \
     --build-arg ROOT_PASSWORD=$ROOT_PASSWORD \
     --build-arg XDEBUG_VERSION=$XDEBUG_VERSION \
+    --build-arg UID=$UID \
     --no-cache \
     $APACHE_DIR
 mkdir ./sites/$NAME
