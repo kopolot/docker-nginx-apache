@@ -1,6 +1,7 @@
 ARG PHP_VERSION
 FROM php:${PHP_VERSION}-fpm-alpine
 # to musi tu byc bo to sa argumety po from
+ARG PHP_VERSION_SHORT
 ARG XDEBUG_VERSION
 ARG ROOT_PASSWORD
 ARG UID
@@ -8,8 +9,9 @@ ARG UID
 RUN apk update
 RUN apk add nano git bash sudo bash-completion mariadb-client autoconf build-base cronie;apk add --update linux-headers libzip-dev icu-dev
 RUN pecl install "xdebug-${XDEBUG_VERSION}"; 
+# RUN apk add php${PHP_VERSION_SHORT}-pecl-xdebug
 RUN echo "zend_extension=xdebug.so" > /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-RUN docker-php-ext-install opcache mysqli intl zip
+RUN docker-php-ext-install mysqli intl zip
 
 RUN adduser -s $(which bash) --disabled-password -u ${UID} container
 RUN echo -e "Defaults rootpw\nALL ALL=(ALL:ALL) PASSWD: ALL\nDefaults env_keep += ""*""" | tee -a /etc/sudoers

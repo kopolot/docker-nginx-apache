@@ -38,9 +38,11 @@ else
     HOSTNAME=local.test.com
     ROOT_PASSWORD=DB_NAME=DB_USER=DB_PASSWORD="test"
 fi
+IFS='.' read -r PHP_VER_MAJOR _ _ <<< "$PHP_VERSION"
+PHP_VERSION_SHORT="${PHP_VER_MAJOR}"
 # tu mozna docelowo dac switcha czy cos
 if (( $( echo "$PHP_VERSION >= 8.1" | bc ) )); then
-    XDEBUG_VERSION="3.3.2"
+    XDEBUG_VERSION="3.5.0"
 else
     XDEBUG_VERSION="3.1.5"
 fi
@@ -69,6 +71,7 @@ docker run -d \
     --env "PHP_INI_DIR=/usr/local/etc/php" \
     --network "$NAME-localhost" \
     --hostname php-fpm \
+    --add-host "host.docker.internal:host-gateway" \
     --user container \
     --restart always \
     "$NAME-php-$PHP_VERSION-fpm"

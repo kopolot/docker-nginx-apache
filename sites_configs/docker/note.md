@@ -1,0 +1,1 @@
+trzeba kiedys dorobic dodawanie plikow compose zamiast zwyklego cli docker
